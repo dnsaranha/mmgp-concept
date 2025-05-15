@@ -8,9 +8,10 @@ import type { QuestionResponse } from "@/lib/form-reducer"
 interface Level3FormProps {
   data: Record<string, QuestionResponse>
   onChange: (questionId: string, value: QuestionResponse) => void
+  unansweredQuestions?: string[] // Nova propriedade para destacar perguntas não respondidas
 }
 
-export const Level3Form = memo(function Level3Form({ data = {}, onChange }: Level3FormProps) {
+export const Level3Form = memo(function Level3Form({ data = {}, onChange, unansweredQuestions = [] }: Level3FormProps) {
   const questions = [
     {
       id: "q11",
@@ -124,6 +125,7 @@ export const Level3Form = memo(function Level3Form({ data = {}, onChange }: Leve
               detailFields={q.detailFields}
               value={data[q.id] || {}}
               onChange={onChange}
+              isHighlighted={unansweredQuestions.includes(q.id)}
             />
           ))}
         </CardContent>

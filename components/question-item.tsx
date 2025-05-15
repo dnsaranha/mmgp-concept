@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import type { QuestionResponse } from "@/lib/form-reducer"
+import { cn } from "@/lib/utils"
 
 interface QuestionItemProps {
   id: string
@@ -13,6 +14,7 @@ interface QuestionItemProps {
   detailFields?: string[]
   value: QuestionResponse
   onChange: (id: string, value: QuestionResponse) => void
+  isHighlighted?: boolean // Nova propriedade para destacar perguntas não respondidas
 }
 
 export const QuestionItem = memo(function QuestionItem({
@@ -21,6 +23,7 @@ export const QuestionItem = memo(function QuestionItem({
   detailFields = [],
   value = {},
   onChange,
+  isHighlighted = false,
 }: QuestionItemProps) {
   const meetsRequirement = value.meetsRequirement || ""
   const details = value.details || {}
@@ -43,11 +46,14 @@ export const QuestionItem = memo(function QuestionItem({
   }
 
   return (
-    <Card className="mb-6">
+    <Card className={cn("mb-6", isHighlighted && "border-red-500 shadow-md")}>
       <CardContent className="pt-6">
         <div className="space-y-4">
           <div>
-            <Label className="text-base font-medium">{question}</Label>
+            <Label className={cn("text-base font-medium", isHighlighted && "text-red-500")}>
+              {question}
+              {isHighlighted && <span className="ml-2 text-sm font-normal text-red-500">(Resposta obrigatória)</span>}
+            </Label>
           </div>
 
           <RadioGroup

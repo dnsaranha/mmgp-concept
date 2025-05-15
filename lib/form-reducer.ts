@@ -8,11 +8,19 @@ export type FormState = {
     isPharmaceuticalIndustry?: string
     productType?: string
     companySize?: string
+    estado?: string
   }
   level2: Record<string, QuestionResponse>
   level3: Record<string, QuestionResponse>
   level4: Record<string, QuestionResponse>
   level5: Record<string, QuestionResponse>
+  results?: {
+    maturityIndex: number
+    level2Score: number
+    level3Score: number
+    level4Score: number
+    level5Score: number
+  }
   submitted: boolean
 }
 
@@ -26,6 +34,7 @@ export type FormAction =
   | { type: "UPDATE_EMAIL"; email: string }
   | { type: "UPDATE_CLASSIFICATION"; field: string; value: string }
   | { type: "UPDATE_QUESTION"; level: string; questionId: string; value: QuestionResponse }
+  | { type: "SET_RESULTS"; results: FormState["results"] }
   | { type: "SET_SUBMITTED"; value: boolean }
 
 // Função reducer
@@ -54,6 +63,11 @@ export function formReducer(state: FormState, action: FormAction): FormState {
           ...state[action.level as keyof FormState],
           [action.questionId]: action.value,
         },
+      }
+    case "SET_RESULTS":
+      return {
+        ...state,
+        results: action.results,
       }
     case "SET_SUBMITTED":
       return {

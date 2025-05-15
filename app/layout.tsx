@@ -3,19 +3,15 @@ import "@/app/globals.css"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
-import { createServerClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
+import { AuthProvider } from "@/contexts/auth-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(cookieStore)
-
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
@@ -27,10 +23,16 @@ export default async function RootLayout({
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          {children}
-          <Toaster />
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
   )
 }
+
+export const metadata = {
+      generator: 'v0.dev'
+    };

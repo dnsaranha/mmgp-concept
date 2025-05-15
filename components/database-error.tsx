@@ -8,7 +8,7 @@ export function DatabaseError() {
       <AlertTitle>Erro de configuração</AlertTitle>
       <AlertDescription>
         O banco de dados não está configurado corretamente. Por favor, verifique as variáveis de ambiente
-        NEXT_PUBLIC_SUPABASE_URL e API_KEY.
+        NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.
       </AlertDescription>
     </Alert>
   )

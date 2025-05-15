@@ -4,17 +4,35 @@ import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertTriangle } from "lucide-react"
 import type { FormState } from "@/lib/form-reducer"
 
 interface ResultsViewProps {
   formData: FormState
+  unansweredQuestions?: {
+    level2: string[]
+    level3: string[]
+    level4: string[]
+    level5: string[]
+  }
 }
 
-export function ResultsView({ formData }: ResultsViewProps) {
+export function ResultsView({
+  formData,
+  unansweredQuestions = { level2: [], level3: [], level4: [], level5: [] },
+}: ResultsViewProps) {
   const calculateLevelScore = (level: keyof FormState) => {
-    if (level === "classification") return 0
+    if (
+      !formData ||
+      level === "classification" ||
+      level === "respondent" ||
+      level === "results" ||
+      level === "submitted"
+    )
+      return 0
 
-    const levelData = formData[level]
+    const levelData = formData[level] as Record<string, any>
     if (!levelData) return 0
 
     let totalPoints = 0
@@ -87,8 +105,40 @@ export function ResultsView({ formData }: ResultsViewProps) {
     return descriptions[level][2]
   }
 
+  // Verificar se há perguntas não respondidas
+  const totalUnansweredQuestions =
+    unansweredQuestions.level2.length +
+    unansweredQuestions.level3.length +
+    unansweredQuestions.level4.length +
+    unansweredQuestions.level5.length
+
   return (
     <div className="space-y-8">
+      {totalUnansweredQuestions > 0 && (
+        <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-800">Atenção: Perguntas não respondidas</AlertTitle>
+          <AlertDescription className="text-yellow-700">
+            Existem {totalUnansweredQuestions} perguntas que não foram respondidas. Para uma avaliação mais precisa,
+            recomendamos responder todas as perguntas.
+            <ul className="mt-2 list-disc list-inside">
+              {unansweredQuestions.level2.length > 0 && (
+                <li>Nível 2: {unansweredQuestions.level2.length} pergunta(s) não respondida(s)</li>
+              )}
+              {unansweredQuestions.level3.length > 0 && (
+                <li>Nível 3: {unansweredQuestions.level3.length} pergunta(s) não respondida(s)</li>
+              )}
+              {unansweredQuestions.level4.length > 0 && (
+                <li>Nível 4: {unansweredQuestions.level4.length} pergunta(s) não respondida(s)</li>
+              )}
+              {unansweredQuestions.level5.length > 0 && (
+                <li>Nível 5: {unansweredQuestions.level5.length} pergunta(s) não respondida(s)</li>
+              )}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Resultados da Avaliação de Maturidade</CardTitle>
