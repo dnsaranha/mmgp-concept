@@ -5,9 +5,10 @@ import type { FormState } from "./form-reducer"
 let supabaseInstance: ReturnType<typeof createClient> | null = null
 
 export function getSupabaseClient() {
+  // Se já temos uma instância, retorná-la
   if (supabaseInstance) return supabaseInstance
 
-  // Usar as variáveis de ambiente que foram adicionadas ao projeto
+  // Obter as variáveis de ambiente
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -18,33 +19,8 @@ export function getSupabaseClient() {
   }
 
   try {
-    // Criar o cliente com opções específicas para produção
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: "supabase-auth",
-        storage: {
-          getItem: (key) => {
-            if (typeof window !== "undefined") {
-              return window.localStorage.getItem(key)
-            }
-            return null
-          },
-          setItem: (key, value) => {
-            if (typeof window !== "undefined") {
-              window.localStorage.setItem(key, value)
-            }
-          },
-          removeItem: (key) => {
-            if (typeof window !== "undefined") {
-              window.localStorage.removeItem(key)
-            }
-          },
-        },
-      },
-    })
+    // Criar o cliente Supabase com configurações básicas
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
     return supabaseInstance
   } catch (error) {
     console.error("Error initializing Supabase client:", error)
@@ -52,7 +28,7 @@ export function getSupabaseClient() {
   }
 }
 
-// Backward compatibility
+// Para compatibilidade
 export const supabase = getSupabaseClient()
 
 // Função para calcular o score de um nível

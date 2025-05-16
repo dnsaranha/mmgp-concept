@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -24,119 +24,77 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
 
-  // Verificar se já está autenticado
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const supabase = getSupabaseClient()
-        if (!supabase) return
-
-        const { data } = await supabase.auth.getSession()
-        if (data.session) {
-          router.push("/")
-        }
-      } catch (err) {
-        console.error("Error checking session:", err)
-      }
-    }
-
-    checkSession()
-  }, [router])
-
-  // Função para lidar com o login diretamente, sem usar o contexto
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
     try {
+      // Obter o cliente Supabase
       const supabase = getSupabaseClient()
       if (!supabase) {
-        setError("Erro de conexão com o banco de dados")
-        setLoading(false)
-        return
+        throw new Error("Não foi possível conectar ao banco de dados")
       }
 
-      console.log("Tentando login com:", email)
-
-      // Definir um timeout para evitar que o usuário fique preso
-      const loginTimeout = setTimeout(() => {
-        setLoading(false)
-        setError("O login está demorando muito. Por favor, tente novamente.")
-      }, 10000) // 10 segundos de timeout
-
+      // Tentar fazer login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      // Limpar o timeout já que a requisição foi completada
-      clearTimeout(loginTimeout)
-
+      // Se houver erro, mostrar mensagem
       if (error) {
         console.error("Erro de login:", error.message)
-        setError(error.message)
-        setLoading(false)
-        return
+        throw new Error(error.message)
       }
 
+      // Se o login for bem-sucedido, redirecionar para a página inicial
       if (data.user) {
-        console.log("Login bem-sucedido para:", data.user.email)
-        setMessage("Login bem-sucedido! Redirecionando...")
-
-        // Redirecionar após um breve delay
-        setTimeout(() => {
-          router.push("/")
-          router.refresh() // Forçar refresh para atualizar o estado da aplicação
-        }, 1000)
+        router.push("/")
+      } else {
+        throw new Error("Login falhou por motivo desconhecido")
       }
     } catch (err) {
-      console.error("Exceção durante login:", err)
-      setError("Ocorreu um erro ao fazer login. Tente novamente.")
+      setError(err instanceof Error ? err.message : "Erro ao fazer login")
+    } finally {
       setLoading(false)
     }
   }
 
-  // Função para lidar com o cadastro diretamente
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    if (password !== confirmPassword) {
-      setError("As senhas não coincidem")
-      setLoading(false)
-      return
-    }
-
     try {
-      const supabase = getSupabaseClient()
-      if (!supabase) {
-        setError("Erro de conexão com o banco de dados")
-        setLoading(false)
-        return
+      // Verificar se as senhas coincidem
+      if (password !== confirmPassword) {
+        throw new Error("As senhas não coincidem")
       }
 
+      // Obter o cliente Supabase
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        throw new Error("Não foi possível conectar ao banco de dados")
+      }
+
+      // Tentar criar conta
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
       })
 
+      // Se houver erro, mostrar mensagem
       if (error) {
-        setError(error.message)
-        setLoading(false)
-        return
+        throw new Error(error.message)
       }
 
-      setMessage("Verifique seu e-mail para confirmar o cadastro.")
+      // Se o cadastro for bem-sucedido, mostrar mensagem
+      setMessage("Conta criada com sucesso! Verifique seu e-mail para confirmar.")
       setActiveTab("login")
-      setLoading(false)
     } catch (err) {
-      setError("Ocorreu um erro ao criar a conta. Tente novamente.")
-      console.error(err)
+      setError(err instanceof Error ? err.message : "Erro ao criar conta")
+    } finally {
       setLoading(false)
     }
   }
@@ -199,22 +157,6 @@ export default function LoginPage() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
-
-                {loading && (
-                  <div className="text-center mt-4">
-                    <p className="text-sm text-gray-500">Se o login estiver demorando muito, você pode:</p>
-                    <Button
-                      variant="link"
-                      onClick={() => {
-                        setLoading(false)
-                        router.push("/")
-                      }}
-                      className="text-sm"
-                    >
-                      Tentar acessar a página inicial diretamente
-                    </Button>
-                  </div>
-                )}
               </form>
             </TabsContent>
 
