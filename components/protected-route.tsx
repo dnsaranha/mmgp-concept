@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -11,7 +11,6 @@ import { AlertCircle } from "lucide-react"
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     // Verificar se as variáveis de ambiente estão configuradas
@@ -19,7 +18,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      setError("As variáveis de ambiente do Supabase não estão configuradas corretamente.")
+      console.error("As variáveis de ambiente do Supabase não estão configuradas corretamente.")
       return
     }
 
@@ -27,18 +26,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       router.push("/auth/login")
     }
   }, [user, isLoading, router])
-
-  if (error) {
-    return (
-      <div className="container mx-auto py-10">
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Erro de configuração</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
 
   if (isLoading) {
     return (
@@ -49,7 +36,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return null
+    return (
+      <div className="container mx-auto py-10">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acesso Restrito</AlertTitle>
+          <AlertDescription>Você precisa estar logado para acessar esta página.</AlertDescription>
+        </Alert>
+      </div>
+    )
   }
 
   return <>{children}</>

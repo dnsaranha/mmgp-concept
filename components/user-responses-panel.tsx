@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { getSupabaseClient } from "@/lib/supabase"
-import { Eye, FileBarChart } from "lucide-react"
+import { Eye } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { useToast } from "@/components/ui/use-toast"
@@ -169,9 +169,6 @@ export function UserResponsesPanel({ userEmail, onViewDetails }: UserResponsesPa
                       title="Ver detalhes"
                     >
                       <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" title="Exportar relatório">
-                      <FileBarChart className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
