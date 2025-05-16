@@ -10,22 +10,29 @@ export async function middleware(req: NextRequest) {
 
     const {
       data: { session },
+      error,
     } = await supabase.auth.getSession()
 
+    if (error) {
+      console.error("Middleware auth error:", error)
+    }
+
+    // Permitir acesso a rotas de autenticação mesmo sem sessão
+    const isAuthRoute = req.nextUrl.pathname.startsWith("/auth")
+    const isCallbackRoute = req.nextUrl.pathname.startsWith("/auth/callback")
+    const isResetPasswordRoute = req.nextUrl.pathname.startsWith("/auth/reset-password")
+
     // Se o usuário não estiver autenticado e estiver tentando acessar uma rota protegida
-    if (!session && !req.nextUrl.pathname.startsWith("/auth")) {
+    if (!session && !isAuthRoute && !req.nextUrl.pathname.startsWith("/_next")) {
       const redirectUrl = req.nextUrl.clone()
       redirectUrl.pathname = "/auth/login"
+      redirectUrl.searchParams.set("redirectedFrom", req.nextUrl.pathname)
       return NextResponse.redirect(redirectUrl)
     }
 
     // Se o usuário estiver autenticado e estiver tentando acessar uma rota de autenticação
-    if (
-      session &&
-      req.nextUrl.pathname.startsWith("/auth") &&
-      !req.nextUrl.pathname.startsWith("/auth/reset-password") &&
-      !req.nextUrl.pathname.startsWith("/auth/callback")
-    ) {
+    // (exceto reset-password e callback)
+    if (session && isAuthRoute && !isCallbackRoute && !isResetPasswordRoute) {
       const redirectUrl = req.nextUrl.clone()
       redirectUrl.pathname = "/"
       return NextResponse.redirect(redirectUrl)

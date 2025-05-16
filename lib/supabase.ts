@@ -18,7 +18,14 @@ export function getSupabaseClient() {
   }
 
   try {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
+    // Criar o cliente com opções específicas para produção
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
     return supabaseInstance
   } catch (error) {
     console.error("Error initializing Supabase client:", error)

@@ -38,7 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const {
           data: { session },
+          error,
         } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error("Error getting session:", error)
+        }
+
         setSession(session)
         setUser(session?.user || null)
       } catch (error) {
@@ -61,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event, session?.user?.email)
       setSession(session)
       setUser(session?.user || null)
       setIsLoading(false)
@@ -78,11 +85,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: "Erro de conexão com o banco de dados" }
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      console.log("Attempting to sign in with:", email)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      })
 
       if (error) {
+        console.error("Sign in error:", error)
         return { error: error.message }
       }
+
+      console.log("Sign in successful:", data.user?.email)
+      // Atualizar o estado imediatamente após o login bem-sucedido
+      setUser(data.user)
+      setSession(data.session)
 
       return { error: null }
     } catch (error) {

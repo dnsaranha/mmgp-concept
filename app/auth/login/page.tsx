@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
@@ -23,7 +23,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, user } = useAuth()
+
+  // Redirecionar se o usuário já estiver autenticado
+  useEffect(() => {
+    if (user) {
+      router.push("/")
+    }
+  }, [user, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,18 +38,21 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      console.log("Attempting login with:", email)
       const { error } = await signIn(email, password)
 
       if (error) {
+        console.error("Login error:", error)
         setError(error)
+        setLoading(false)
         return
       }
 
-      router.push("/")
+      // O redirecionamento será feito pelo useEffect quando o usuário for definido
+      console.log("Login successful, redirecting...")
     } catch (err) {
+      console.error("Login exception:", err)
       setError("Ocorreu um erro ao fazer login. Tente novamente.")
-      console.error(err)
-    } finally {
       setLoading(false)
     }
   }
@@ -63,15 +73,16 @@ export default function LoginPage() {
 
       if (error) {
         setError(error)
+        setLoading(false)
         return
       }
 
       setMessage("Verifique seu e-mail para confirmar o cadastro.")
       setActiveTab("login")
+      setLoading(false)
     } catch (err) {
       setError("Ocorreu um erro ao criar a conta. Tente novamente.")
       console.error(err)
-    } finally {
       setLoading(false)
     }
   }
