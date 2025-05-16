@@ -5,7 +5,6 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { getSupabaseClient } from "@/lib/supabase"
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("login")
@@ -23,40 +23,81 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
-  const { signIn, signUp, user } = useAuth()
 
-  // Redirecionar se o usuário já estiver autenticado
+  // Verificar se já está autenticado
   useEffect(() => {
-    if (user) {
-      router.push("/")
-    }
-  }, [user, router])
+    const checkSession = async () => {
+      try {
+        const supabase = getSupabaseClient()
+        if (!supabase) return
 
+        const { data } = await supabase.auth.getSession()
+        if (data.session) {
+          router.push("/")
+        }
+      } catch (err) {
+        console.error("Error checking session:", err)
+      }
+    }
+
+    checkSession()
+  }, [router])
+
+  // Função para lidar com o login diretamente, sem usar o contexto
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
     try {
-      console.log("Attempting login with:", email)
-      const { error } = await signIn(email, password)
-
-      if (error) {
-        console.error("Login error:", error)
-        setError(error)
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        setError("Erro de conexão com o banco de dados")
         setLoading(false)
         return
       }
 
-      // O redirecionamento será feito pelo useEffect quando o usuário for definido
-      console.log("Login successful, redirecting...")
+      console.log("Tentando login com:", email)
+
+      // Definir um timeout para evitar que o usuário fique preso
+      const loginTimeout = setTimeout(() => {
+        setLoading(false)
+        setError("O login está demorando muito. Por favor, tente novamente.")
+      }, 10000) // 10 segundos de timeout
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      // Limpar o timeout já que a requisição foi completada
+      clearTimeout(loginTimeout)
+
+      if (error) {
+        console.error("Erro de login:", error.message)
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      if (data.user) {
+        console.log("Login bem-sucedido para:", data.user.email)
+        setMessage("Login bem-sucedido! Redirecionando...")
+
+        // Redirecionar após um breve delay
+        setTimeout(() => {
+          router.push("/")
+          router.refresh() // Forçar refresh para atualizar o estado da aplicação
+        }, 1000)
+      }
     } catch (err) {
-      console.error("Login exception:", err)
+      console.error("Exceção durante login:", err)
       setError("Ocorreu um erro ao fazer login. Tente novamente.")
       setLoading(false)
     }
   }
 
+  // Função para lidar com o cadastro diretamente
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -69,10 +110,23 @@ export default function LoginPage() {
     }
 
     try {
-      const { error } = await signUp(email, password)
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        setError("Erro de conexão com o banco de dados")
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
 
       if (error) {
-        setError(error)
+        setError(error.message)
         setLoading(false)
         return
       }
@@ -145,6 +199,22 @@ export default function LoginPage() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
+
+                {loading && (
+                  <div className="text-center mt-4">
+                    <p className="text-sm text-gray-500">Se o login estiver demorando muito, você pode:</p>
+                    <Button
+                      variant="link"
+                      onClick={() => {
+                        setLoading(false)
+                        router.push("/")
+                      }}
+                      className="text-sm"
+                    >
+                      Tentar acessar a página inicial diretamente
+                    </Button>
+                  </div>
+                )}
               </form>
             </TabsContent>
 
