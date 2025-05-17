@@ -47,16 +47,22 @@ export default function LoginPage() {
       if (!supabaseConfigured) {
         throw new Error("Erro de conexão com o banco de dados. Verifique as variáveis de ambiente.")
       }
+      console.log("Iniciando processo de login com email:", email)
 
       const supabase = getSupabaseClient()
+
+      console.log("Cliente Supabase inicializado:", !!supabase)
+
       if (!supabase) {
         throw new Error("Erro de conexão com o banco de dados")
       }
+      console.log("Tentando fazer login com Supabase")
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+      console.log("Resposta do Supabase:", { data: !!data, error: error?.message })
 
       if (error) {
         console.error("Erro de login:", error.message)
@@ -70,11 +76,13 @@ export default function LoginPage() {
       }
 
       if (data.user) {
+      console.log("Login bem-sucedido, redirecionando para /")
         router.push("/")
       } else {
         throw new Error("Login falhou por motivo desconhecido")
       }
     } catch (err) {
+      console.error("Erro capturado no catch:", err)
       setError(err instanceof Error ? err.message : "Erro ao fazer login")
     } finally {
       setLoading(false)
