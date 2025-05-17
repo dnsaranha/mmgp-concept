@@ -14,10 +14,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, ExternalLink } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase"
 
-useEffect(() => {
-  console.log("Página de login carregada, URL atual:", window.location.href);
-}, []);
-
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("login")
   const [email, setEmail] = useState("")
@@ -28,6 +24,11 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [supabaseConfigured, setSupabaseConfigured] = useState(true)
   const router = useRouter()
+
+  // Log da página carregada
+  useEffect(() => {
+    console.log("Página de login carregada, URL atual:", window.location.href);
+  }, []);
 
   // Verificar se o Supabase está configurado
   useEffect(() => {
@@ -87,7 +88,6 @@ export default function LoginPage() {
         } catch (redirectError) {
           console.error("Erro ao redirecionar:", redirectError);
         }
-      }
       } else {
         throw new Error("Login falhou por motivo desconhecido")
       }
@@ -233,13 +233,6 @@ export default function LoginPage() {
                   type="submit" 
                   className="w-full" 
                   disabled={loading}
-                  onClick={(e) => {
-                    // Garantir que o evento de clique não seja cancelado
-                    if (!loading) {
-                      e.preventDefault();
-                      handleLogin(e);
-                    }
-                  }}
                 >
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
