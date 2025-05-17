@@ -7,6 +7,7 @@ export async function middleware(req: NextRequest) {
   if (
     req.nextUrl.pathname.startsWith("/auth") ||
     req.nextUrl.pathname.startsWith("/_next") ||
+    req.nextUrl.pathname.startsWith("/env-check") ||
     req.nextUrl.pathname === "/favicon.ico"
   ) {
     return NextResponse.next()
@@ -28,6 +29,11 @@ export async function middleware(req: NextRequest) {
     }
   } catch (error) {
     console.error("Middleware error:", error)
+    // Em caso de erro, permitir o acesso à página de verificação de ambiente
+    if (!req.nextUrl.pathname.startsWith("/env-check")) {
+      const redirectUrl = new URL("/env-check", req.url)
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
   return res

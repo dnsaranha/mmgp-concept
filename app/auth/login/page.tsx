@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, ExternalLink } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase"
 
 export default function LoginPage() {
@@ -22,7 +22,21 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [supabaseConfigured, setSupabaseConfigured] = useState(true)
   const router = useRouter()
+
+  // Verificar se o Supabase está configurado
+  useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      setSupabaseConfigured(false)
+      console.error("Variáveis de ambiente do Supabase não configuradas")
+    } else {
+      setSupabaseConfigured(true)
+    }
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,25 +44,31 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Obter o cliente Supabase
-      const supabase = getSupabaseClient()
-      if (!supabase) {
-        throw new Error("Não foi possível conectar ao banco de dados")
+      if (!supabaseConfigured) {
+        throw new Error("Erro de conexão com o banco de dados. Verifique as variáveis de ambiente.")
       }
 
-      // Tentar fazer login
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        throw new Error("Erro de conexão com o banco de dados")
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      // Se houver erro, mostrar mensagem
       if (error) {
         console.error("Erro de login:", error.message)
+
+        // Mensagens de erro mais amigáveis
+        if (error.message.includes("Invalid login credentials")) {
+          throw new Error("Email ou senha incorretos")
+        }
+
         throw new Error(error.message)
       }
 
-      // Se o login for bem-sucedido, redirecionar para a página inicial
       if (data.user) {
         router.push("/")
       } else {
@@ -67,24 +87,28 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      if (!supabaseConfigured) {
+        throw new Error("Erro de conexão com o banco de dados. Verifique as variáveis de ambiente.")
+      }
+
       // Verificar se as senhas coincidem
       if (password !== confirmPassword) {
         throw new Error("As senhas não coincidem")
       }
 
-      // Obter o cliente Supabase
       const supabase = getSupabaseClient()
       if (!supabase) {
-        throw new Error("Não foi possível conectar ao banco de dados")
+        throw new Error("Erro de conexão com o banco de dados")
       }
 
-      // Tentar criar conta
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       })
 
-      // Se houver erro, mostrar mensagem
       if (error) {
         throw new Error(error.message)
       }
@@ -107,6 +131,26 @@ export default function LoginPage() {
           <CardDescription>Faça login ou crie uma conta para acessar o formulário de autoavaliação.</CardDescription>
         </CardHeader>
         <CardContent>
+          {!supabaseConfigured && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Erro de conexão com o banco de dados. Verifique se as variáveis de ambiente estão configuradas
+                corretamente.
+                <div className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/env-check")}
+                    className="flex items-center gap-1"
+                  >
+                    Verificar configuração <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
@@ -154,7 +198,7 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full" disabled={loading || !supabaseConfigured}>
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
@@ -193,7 +237,7 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full" disabled={loading || !supabaseConfigured}>
                   {loading ? "Cadastrando..." : "Cadastrar"}
                 </Button>
               </form>
