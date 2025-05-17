@@ -14,6 +14,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, ExternalLink } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase"
 
+useEffect(() => {
+  console.log("Página de login carregada, URL atual:", window.location.href);
+}, []);
+
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("login")
   const [email, setEmail] = useState("")
@@ -76,8 +80,14 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-      console.log("Login bem-sucedido, redirecionando para /")
-        router.push("/")
+        console.log("Login bem-sucedido, redirecionando para /")
+        try {
+          router.push("/");
+          console.log("Redirecionamento iniciado");
+        } catch (redirectError) {
+          console.error("Erro ao redirecionar:", redirectError);
+        }
+      }
       } else {
         throw new Error("Login falhou por motivo desconhecido")
       }
@@ -179,7 +189,13 @@ export default function LoginPage() {
             </TabsList>
 
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault(); // Impedir o comportamento padrão
+                  handleLogin(e);
+                }}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail</Label>
                   <Input
@@ -194,7 +210,14 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Senha</Label>
-                    <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:underline">
+                    <Link 
+                        href="/auth/forgot-password" 
+                        className="text-sm text-blue-600 hover:underline"
+                        onClick={(e) => { 
+                          // Impedir que o clique propague para o formulário 
+                          e.stopPropagation();
+                        }}
+                    >
                       Esqueceu a senha?
                     </Link>
                   </div>
@@ -206,7 +229,18 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading || !supabaseConfigured}>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                  onClick={(e) => {
+                    // Garantir que o evento de clique não seja cancelado
+                    if (!loading) {
+                      e.preventDefault();
+                      handleLogin(e);
+                    }
+                  }}
+                >
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
