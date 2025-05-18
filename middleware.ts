@@ -9,6 +9,7 @@ export async function middleware(req: NextRequest) {
     req.nextUrl.pathname.startsWith("/_next") ||
     req.nextUrl.pathname.startsWith("/env-check") ||
     req.nextUrl.pathname === "/favicon.ico"
+    req.nextUrl.pathname === "/home" 
   ) {
     return NextResponse.next()
   }

@@ -64,7 +64,7 @@ export default function LoginPage() {
       console.log("Login bem-sucedido, redirecionando para /")
       
       // Usar window.location para redirecionamento mais direto
-      window.location.href = "/"
+      window.location.href = "/home"
     } catch (err) {
       console.error("Erro capturado no catch:", err)
       setError(err instanceof Error ? err.message : "Erro ao fazer login")
