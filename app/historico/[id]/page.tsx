@@ -180,7 +180,8 @@ export default function ResponseDetailsPage({ params }: { params: { id: string }
             <CardHeader>
               <CardTitle>Resultados da Avaliação</CardTitle>
               <CardDescription>
-                Índice de Maturidade: <strong>{response.maturity_index.toFixed(2)}</strong> -{" "}
+                Índice de Maturidade:{" "}
+                <strong>{response.maturity_index != null ? response.maturity_index.toFixed(2) : "N/A"}</strong> -{" "}
                 <span className="font-medium">{getMaturityLevel(response.maturity_index)}</span>
               </CardDescription>
             </CardHeader>
@@ -199,8 +200,8 @@ export default function ResponseDetailsPage({ params }: { params: { id: string }
                     <TableCell className="font-medium">Nível 2 - Conhecido</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Progress value={response.level2_score} className="w-20" />
-                        <span>{response.level2_score.toFixed(0)}%</span>
+                        <Progress value={response.level2_score ?? 0} className="w-20" />
+                        <span>{response.level2_score != null ? response.level2_score.toFixed(0) : "0"}%</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -214,8 +215,8 @@ export default function ResponseDetailsPage({ params }: { params: { id: string }
                     <TableCell className="font-medium">Nível 3 - Padronizado</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Progress value={response.level3_score} className="w-20" />
-                        <span>{response.level3_score.toFixed(0)}%</span>
+                        <Progress value={response.level3_score ?? 0} className="w-20" />
+                        <span>{response.level3_score != null ? response.level3_score.toFixed(0) : "0"}%</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -229,8 +230,8 @@ export default function ResponseDetailsPage({ params }: { params: { id: string }
                     <TableCell className="font-medium">Nível 4 - Gerenciado</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Progress value={response.level4_score} className="w-20" />
-                        <span>{response.level4_score.toFixed(0)}%</span>
+                        <Progress value={response.level4_score ?? 0} className="w-20" />
+                        <span>{response.level4_score != null ? response.level4_score.toFixed(0) : "0"}%</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -244,8 +245,8 @@ export default function ResponseDetailsPage({ params }: { params: { id: string }
                     <TableCell className="font-medium">Nível 5 - Otimizado</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Progress value={response.level5_score} className="w-20" />
-                        <span>{response.level5_score.toFixed(0)}%</span>
+                        <Progress value={response.level5_score ?? 0} className="w-20" />
+                        <span>{response.level5_score != null ? response.level5_score.toFixed(0) : "0"}%</span>
                       </div>
                     </TableCell>
                     <TableCell>

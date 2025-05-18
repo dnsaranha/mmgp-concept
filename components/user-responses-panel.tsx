@@ -73,8 +73,7 @@ export function UserResponsesPanel({ userEmail, onViewDetails }: UserResponsesPa
     if (index < 2) return "Inicial"
     if (index < 3) return "Conhecido"
     if (index < 4) return "Padronizado"
-    if (index < 5) return "Gerenciado"
-    return "Otimizado"
+    if (index < 5) return "Otimizado"
   }
 
   if (loading) {
@@ -132,32 +131,42 @@ export function UserResponsesPanel({ userEmail, onViewDetails }: UserResponsesPa
                 <TableCell>{format(new Date(response.submitted_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-medium">{response.maturity_index.toFixed(2)}</span>
+                    <span className="font-medium">
+                      {response.maturity_index != null ? response.maturity_index.toFixed(2) : "N/A"}
+                    </span>
                     <span className="text-xs text-muted-foreground">{getMaturityLevel(response.maturity_index)}</span>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <div className="flex items-center gap-2">
-                    <Progress value={response.level2_score} className="w-16 h-2" />
-                    <span className="text-xs">{response.level2_score.toFixed(0)}%</span>
+                    <Progress value={response.level2_score ?? 0} className="w-16 h-2" />
+                    <span className="text-xs">
+                      {response.level2_score != null ? response.level2_score.toFixed(0) : "0"}%
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <div className="flex items-center gap-2">
-                    <Progress value={response.level3_score} className="w-16 h-2" />
-                    <span className="text-xs">{response.level3_score.toFixed(0)}%</span>
+                    <Progress value={response.level3_score ?? 0} className="w-16 h-2" />
+                    <span className="text-xs">
+                      {response.level3_score != null ? response.level3_score.toFixed(0) : "0"}%
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <div className="flex items-center gap-2">
-                    <Progress value={response.level4_score} className="w-16 h-2" />
-                    <span className="text-xs">{response.level4_score.toFixed(0)}%</span>
+                    <Progress value={response.level4_score ?? 0} className="w-16 h-2" />
+                    <span className="text-xs">
+                      {response.level4_score != null ? response.level4_score.toFixed(0) : "0"}%
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <div className="flex items-center gap-2">
-                    <Progress value={response.level5_score} className="w-16 h-2" />
-                    <span className="text-xs">{response.level5_score.toFixed(0)}%</span>
+                    <Progress value={response.level5_score ?? 0} className="w-16 h-2" />
+                    <span className="text-xs">
+                      {response.level5_score != null ? response.level5_score.toFixed(0) : "0"}%
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
