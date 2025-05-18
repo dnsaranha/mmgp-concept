@@ -101,7 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: "Erro de conexão com o banco de dados" }
       }
 
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
 
       if (error) {
         return { error: error.message }

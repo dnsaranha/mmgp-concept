@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getSupabaseClient } from "@/lib/supabase"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null)
@@ -19,7 +21,7 @@ export default function HomePage() {
         }
 
         const { data, error } = await supabase.auth.getSession()
-        
+
         if (error) {
           console.error("Erro ao verificar sessão:", error)
           router.push("/auth/login")
@@ -42,41 +44,53 @@ export default function HomePage() {
     checkUser()
   }, [router])
 
+  const handleSignOut = async () => {
+    try {
+      const supabase = getSupabaseClient()
+      if (supabase) {
+        await supabase.auth.signOut()
+        router.push("/auth/login")
+      }
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-xl">Carregando...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <h1 className="text-3xl font-bold mb-6">Página Inicial</h1>
-      
-      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">Bem-vindo!</h2>
-        
-        {user && (
-          <div className="mb-4">
-            <p className="mb-2"><strong>Email:</strong> {user.email}</p>
-            <p className="mb-2"><strong>ID:</strong> {user.id}</p>
+    <div className="container mx-auto py-10">
+      <Card className="max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Bem-vindo à Autoavaliação MMGP</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {user && (
+            <div className="space-y-2">
+              <p>
+                <strong>Email:</strong> {user.email}
+              </p>
+              <p>
+                <strong>ID:</strong> {user.id}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-between">
+            <Button onClick={() => router.push("/")}>Ir para o formulário</Button>
+
+            <Button variant="destructive" onClick={handleSignOut}>
+              Sair
+            </Button>
           </div>
-        )}
-        
-        <button
-          onClick={async () => {
-            const supabase = getSupabaseClient()
-            if (supabase) {
-              await supabase.auth.signOut()
-              router.push("/auth/login")
-            }
-          }}
-          className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
-        >
-          Sair
-        </button>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, ExternalLink } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase"
-import { useAuth } from "@/contexts/auth-context"
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("login")
@@ -25,12 +24,6 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [supabaseConfigured, setSupabaseConfigured] = useState(true)
   const router = useRouter()
-  const { signIn } = useAuth()
-
-  // Log da página carregada
-  useEffect(() => {
-    console.log("Página de login carregada, URL atual:", window.location.href);
-  }, []);
 
   // Verificar se o Supabase está configurado
   useEffect(() => {
@@ -52,19 +45,28 @@ export default function LoginPage() {
 
     try {
       console.log("Iniciando processo de login com email:", email)
-      
-      // Usar o método signIn do contexto de autenticação
-      const { error: signInError } = await signIn(email, password)
-      
-      if (signInError) {
-        console.error("Erro de login:", signInError)
-        throw new Error(signInError)
+
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        throw new Error("Erro de conexão com o banco de dados")
       }
-      
-      console.log("Login bem-sucedido, redirecionando para /")
-      
-      // Usar window.location para redirecionamento mais direto
-      window.location.href = "/home"
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        console.error("Erro de login:", error.message)
+        throw new Error(error.message)
+      }
+
+      if (data.user) {
+        console.log("Login bem-sucedido, redirecionando para /home")
+        router.push("/home")
+      } else {
+        throw new Error("Login falhou por motivo desconhecido")
+      }
     } catch (err) {
       console.error("Erro capturado no catch:", err)
       setError(err instanceof Error ? err.message : "Erro ao fazer login")
@@ -163,13 +165,7 @@ export default function LoginPage() {
             </TabsList>
 
             <TabsContent value="login">
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault(); // Impedir o comportamento padrão
-                  handleLogin(e);
-                }}
-                className="space-y-4"
-              >
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail</Label>
                   <Input
@@ -184,14 +180,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Senha</Label>
-                    <Link 
-                        href="/auth/forgot-password" 
-                        className="text-sm text-blue-600 hover:underline"
-                        onClick={(e) => { 
-                          // Impedir que o clique propague para o formulário 
-                          e.stopPropagation();
-                        }}
-                    >
+                    <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:underline">
                       Esqueceu a senha?
                     </Link>
                   </div>
@@ -203,11 +192,7 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={loading}
-                >
+                <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
