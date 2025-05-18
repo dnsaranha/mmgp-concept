@@ -15,6 +15,7 @@ import { AlertCircle, ExternalLink } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase"
 
 export default function LoginPage() {
+  const { signIn } = useAuth()
   const [activeTab, setActiveTab] = useState("login")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -49,6 +50,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      
       if (!supabaseConfigured) {
         throw new Error("Erro de conexão com o banco de dados. Verifique as variáveis de ambiente.")
       }
