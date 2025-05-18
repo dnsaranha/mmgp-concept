@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, ExternalLink } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("login")
@@ -24,6 +25,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [supabaseConfigured, setSupabaseConfigured] = useState(true)
   const router = useRouter()
+  const { signIn } = useAuth()
 
   // Log da página carregada
   useEffect(() => {
@@ -49,49 +51,20 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      
-      if (!supabaseConfigured) {
-        throw new Error("Erro de conexão com o banco de dados. Verifique as variáveis de ambiente.")
-      }
       console.log("Iniciando processo de login com email:", email)
-
-      const supabase = getSupabaseClient()
-
-      console.log("Cliente Supabase inicializado:", !!supabase)
-
-      if (!supabase) {
-        throw new Error("Erro de conexão com o banco de dados")
+      
+      // Usar o método signIn do contexto de autenticação
+      const { error: signInError } = await signIn(email, password)
+      
+      if (signInError) {
+        console.error("Erro de login:", signInError)
+        throw new Error(signInError)
       }
-      console.log("Tentando fazer login com Supabase")
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      console.log("Resposta do Supabase:", { data: !!data, error: error?.message })
-
-      if (error) {
-        console.error("Erro de login:", error.message)
-
-        // Mensagens de erro mais amigáveis
-        if (error.message.includes("Invalid login credentials")) {
-          throw new Error("Email ou senha incorretos")
-        }
-
-        throw new Error(error.message)
-      }
-
-      if (data.user) {
-        console.log("Login bem-sucedido, redirecionando para /")
-        try {
-          router.push("/");
-          console.log("Redirecionamento iniciado");
-        } catch (redirectError) {
-          console.error("Erro ao redirecionar:", redirectError);
-        }
-      } else {
-        throw new Error("Login falhou por motivo desconhecido")
-      }
+      
+      console.log("Login bem-sucedido, redirecionando para /")
+      
+      // Usar window.location para redirecionamento mais direto
+      window.location.href = "/"
     } catch (err) {
       console.error("Erro capturado no catch:", err)
       setError(err instanceof Error ? err.message : "Erro ao fazer login")
