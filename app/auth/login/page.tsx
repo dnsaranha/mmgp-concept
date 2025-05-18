@@ -2,17 +2,17 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, ExternalLink } from "lucide-react"
-import { getSupabaseClient } from "@/lib/supabase"
+import { AlertCircle } from "lucide-react"
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("login")
@@ -22,21 +22,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const [supabaseConfigured, setSupabaseConfigured] = useState(true)
   const router = useRouter()
-
-  // Verificar se o Supabase está configurado
-  useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      setSupabaseConfigured(false)
-      console.error("Variáveis de ambiente do Supabase não configuradas")
-    } else {
-      setSupabaseConfigured(true)
-    }
-  }, [])
+  const { signIn, signUp } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,32 +31,17 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      console.log("Iniciando processo de login com email:", email)
-
-      const supabase = getSupabaseClient()
-      if (!supabase) {
-        throw new Error("Erro de conexão com o banco de dados")
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      const { error } = await signIn(email, password)
 
       if (error) {
-        console.error("Erro de login:", error.message)
-        throw new Error(error.message)
+        setError(error)
+        return
       }
 
-      if (data.user) {
-        console.log("Login bem-sucedido, redirecionando para /home")
-        router.push("/home")
-      } else {
-        throw new Error("Login falhou por motivo desconhecido")
-      }
+      router.push("/")
     } catch (err) {
-      console.error("Erro capturado no catch:", err)
-      setError(err instanceof Error ? err.message : "Erro ao fazer login")
+      setError("Ocorreu um erro ao fazer login. Tente novamente.")
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -80,38 +52,25 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
+    if (password !== confirmPassword) {
+      setError("As senhas não coincidem")
+      setLoading(false)
+      return
+    }
+
     try {
-      if (!supabaseConfigured) {
-        throw new Error("Erro de conexão com o banco de dados. Verifique as variáveis de ambiente.")
-      }
-
-      // Verificar se as senhas coincidem
-      if (password !== confirmPassword) {
-        throw new Error("As senhas não coincidem")
-      }
-
-      const supabase = getSupabaseClient()
-      if (!supabase) {
-        throw new Error("Erro de conexão com o banco de dados")
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
+      const { error } = await signUp(email, password)
 
       if (error) {
-        throw new Error(error.message)
+        setError(error)
+        return
       }
 
-      // Se o cadastro for bem-sucedido, mostrar mensagem
-      setMessage("Conta criada com sucesso! Verifique seu e-mail para confirmar.")
+      setMessage("Verifique seu e-mail para confirmar o cadastro.")
       setActiveTab("login")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar conta")
+      setError("Ocorreu um erro ao criar a conta. Tente novamente.")
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -125,26 +84,6 @@ export default function LoginPage() {
           <CardDescription>Faça login ou crie uma conta para acessar o formulário de autoavaliação.</CardDescription>
         </CardHeader>
         <CardContent>
-          {!supabaseConfigured && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Erro de conexão com o banco de dados. Verifique se as variáveis de ambiente estão configuradas
-                corretamente.
-                <div className="mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push("/env-check")}
-                    className="flex items-center gap-1"
-                  >
-                    Verificar configuração <ExternalLink className="h-3 w-3" />
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
@@ -231,7 +170,7 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading || !supabaseConfigured}>
+                <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Cadastrando..." : "Cadastrar"}
                 </Button>
               </form>

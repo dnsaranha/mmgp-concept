@@ -3,56 +3,22 @@ import type { FormState } from "./form-reducer"
 
 // Singleton pattern for Supabase client
 let supabaseInstance: ReturnType<typeof createClient> | null = null
-let lastConnectionAttempt = 0
-const CONNECTION_COOLDOWN = 2000 // 2 segundos entre tentativas de conexão
 
 export function getSupabaseClient() {
-  // Se já temos uma instância, retorná-la
   if (supabaseInstance) return supabaseInstance
 
-  // Verificar se não estamos tentando criar muitas conexões em um curto período
-  const now = Date.now()
-  if (now - lastConnectionAttempt < CONNECTION_COOLDOWN) {
-    console.warn("Muitas tentativas de conexão em um curto período. Aguardando...")
-    return supabaseInstance // Retorna a instância atual (que pode ser null)
-  }
-
-  lastConnectionAttempt = now
-
-  // Obter as variáveis de ambiente
+  // Usar as variáveis de ambiente que foram adicionadas ao projeto
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   // Verificar se as variáveis de ambiente estão configuradas
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("Supabase environment variables are not set correctly")
-    console.error(`NEXT_PUBLIC_SUPABASE_URL: ${supabaseUrl ? "definido" : "não definido"}`)
-    console.error(`NEXT_PUBLIC_SUPABASE_ANON_KEY: ${supabaseAnonKey ? "definido" : "não definido"}`)
     return null
   }
 
   try {
-    // Criar o cliente Supabase com configurações otimizadas
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-      // Configurações para otimizar o uso de conexões
-      db: {
-        schema: "public",
-      },
-      global: {
-        // Adicionar timeout para evitar conexões penduradas
-        fetch: (url, options) => {
-          return fetch(url, {
-            ...options,
-            signal: AbortSignal.timeout(10000), // 10 segundos de timeout
-          })
-        },
-      },
-    })
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
     return supabaseInstance
   } catch (error) {
     console.error("Error initializing Supabase client:", error)
@@ -60,12 +26,7 @@ export function getSupabaseClient() {
   }
 }
 
-// Função para liberar a conexão quando não estiver em uso
-export function releaseSupabaseConnection() {
-  supabaseInstance = null
-}
-
-// Para compatibilidade
+// Backward compatibility
 export const supabase = getSupabaseClient()
 
 // Função para calcular o score de um nível
@@ -168,9 +129,6 @@ export async function saveFormData(formData: FormState) {
     // Tentar inserir os dados
     const { data, error } = await supabaseClient.from("mmgp_responses").insert([dataToInsert]).select()
 
-    // Liberar a conexão após o uso
-    releaseSupabaseConnection()
-
     if (error) {
       console.error("Supabase error:", error)
       return { success: false, error: error.message }
@@ -179,8 +137,6 @@ export async function saveFormData(formData: FormState) {
     return { success: true, data }
   } catch (error) {
     console.error("Exception in saveFormData:", error)
-    // Liberar a conexão em caso de erro
-    releaseSupabaseConnection()
     return { success: false, error: String(error) }
   }
 }
@@ -198,9 +154,6 @@ export async function getUserResponses(userEmail: string) {
       .eq("email", userEmail)
       .order("submitted_at", { ascending: false })
 
-    // Liberar a conexão após o uso
-    releaseSupabaseConnection()
-
     if (error) {
       return { success: false, error: error.message }
     }
@@ -208,8 +161,6 @@ export async function getUserResponses(userEmail: string) {
     return { success: true, data }
   } catch (error) {
     console.error("Exception in getUserResponses:", error)
-    // Liberar a conexão em caso de erro
-    releaseSupabaseConnection()
     return { success: false, error: String(error) }
   }
 }
@@ -223,9 +174,6 @@ export async function getResponseDetails(responseId: string) {
 
     const { data, error } = await supabaseClient.from("mmgp_responses").select("*").eq("id", responseId).single()
 
-    // Liberar a conexão após o uso
-    releaseSupabaseConnection()
-
     if (error) {
       return { success: false, error: error.message }
     }
@@ -233,8 +181,6 @@ export async function getResponseDetails(responseId: string) {
     return { success: true, data }
   } catch (error) {
     console.error("Exception in getResponseDetails:", error)
-    // Liberar a conexão em caso de erro
-    releaseSupabaseConnection()
     return { success: false, error: String(error) }
   }
 }

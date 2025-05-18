@@ -36,14 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return
         }
 
-        const { data, error } = await supabase.auth.getSession()
-
-        if (error) {
-          console.error("Error getting session:", error)
-        } else {
-          setSession(data.session)
-          setUser(data.session?.user || null)
-        }
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        setSession(session)
+        setUser(session?.user || null)
       } catch (error) {
         console.error("Error getting session:", error)
       } finally {
@@ -142,7 +139,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: "Erro de conexão com o banco de dados" }
       }
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email)
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      })
 
       if (error) {
         return { error: error.message }

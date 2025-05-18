@@ -16,7 +16,8 @@ import { formReducer, initialFormState, type QuestionResponse } from "@/lib/form
 import { useToast } from "@/components/ui/use-toast"
 import { DatabaseError } from "@/components/database-error"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, History } from "lucide-react"
+import { AlertTriangle, History, FileText } from "lucide-react"
+import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 
@@ -241,142 +242,127 @@ export default function Home() {
     router.push("/historico")
   }, [router])
 
-  // Verificar se o usuário está autenticado
-  if (!user) {
-    return (
+  return (
+    <ProtectedRoute>
       <div className="container mx-auto py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>Acesso Restrito</CardTitle>
-            <CardDescription>Você precisa estar logado para acessar esta página.</CardDescription>
+        <div className="flex justify-between mb-4">
+          <Button variant="outline" onClick={handleViewHistory} className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Ver histórico de avaliações
+          </Button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">Logado como: {user?.email}</span>
+            <Button variant="outline" size="sm" onClick={signOut}>
+              Sair
+            </Button>
+          </div>
+        </div>
+
+        <Card className="w-full max-w-4xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Autoavaliação de Maturidade em Gerenciamento de Projetos - MMGP</CardTitle>
+            <CardDescription>
+              Este formulário tem como objetivo avaliar o nível de maturidade em gerenciamento de projetos da sua
+              organização, com base no modelo Prado-MMGP.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => router.push("/auth/login")}>Fazer Login</Button>
+            {!isSupabaseConfigured && <DatabaseError />}
+
+            <div className="mb-6">
+              <Progress value={progress} className="h-2" />
+              <div className="flex justify-between mt-2 text-sm text-muted-foreground">
+                <span>Início</span>
+                <span>Progresso: {Math.round(progress)}%</span>
+                <span>Conclusão</span>
+              </div>
+            </div>
+
+            {currentLevelUnansweredCount > 0 && ["level2", "level3", "level4", "level5"].includes(activeTab) && (
+              <Alert variant="warning" className="mb-4 bg-yellow-50 border-yellow-200">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTitle className="text-yellow-800">Perguntas não respondidas</AlertTitle>
+                <AlertDescription className="text-yellow-700">
+                  Existem {currentLevelUnansweredCount} pergunta(s) não respondida(s) neste nível. As perguntas não
+                  respondidas estão destacadas abaixo.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList className="grid grid-cols-7 mb-8">
+                <TabsTrigger value="email">E-mail</TabsTrigger>
+                <TabsTrigger value="classification">Classificação</TabsTrigger>
+                <TabsTrigger value="level2">Nível 2</TabsTrigger>
+                <TabsTrigger value="level3">Nível 3</TabsTrigger>
+                <TabsTrigger value="level4">Nível 4</TabsTrigger>
+                <TabsTrigger value="level5">Nível 5</TabsTrigger>
+                <TabsTrigger value="results">Resultados</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="email">
+                <RespondentEmail email={formState.respondent.email} onChange={handleEmailChange} />
+              </TabsContent>
+
+              <TabsContent value="classification">
+                <RespondentClassification data={formState.classification} onChange={handleClassificationChange} />
+              </TabsContent>
+
+              <TabsContent value="level2">
+                <Level2Form
+                  data={formState.level2}
+                  onChange={(questionId, value) => handleQuestionChange("level2", questionId, value)}
+                  unansweredQuestions={unansweredQuestions.level2}
+                />
+              </TabsContent>
+
+              <TabsContent value="level3">
+                <Level3Form
+                  data={formState.level3}
+                  onChange={(questionId, value) => handleQuestionChange("level3", questionId, value)}
+                  unansweredQuestions={unansweredQuestions.level3}
+                />
+              </TabsContent>
+
+              <TabsContent value="level4">
+                <Level4Form
+                  data={formState.level4}
+                  onChange={(questionId, value) => handleQuestionChange("level4", questionId, value)}
+                  unansweredQuestions={unansweredQuestions.level4}
+                />
+              </TabsContent>
+
+              <TabsContent value="level5">
+                <Level5Form
+                  data={formState.level5}
+                  onChange={(questionId, value) => handleQuestionChange("level5", questionId, value)}
+                  unansweredQuestions={unansweredQuestions.level5}
+                />
+              </TabsContent>
+
+              <TabsContent value="results">
+                <ResultsView formData={formState} unansweredQuestions={unansweredQuestions} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="outline" onClick={handlePrevious} disabled={activeTab === "email"}>
+              Anterior
+            </Button>
+
+            {activeTab === "results" ? (
+              <Button variant="outline" onClick={handleViewHistory} className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Ver histórico
+              </Button>
+            ) : (
+              <Button onClick={handleNext} disabled={!canProceed() || isSaving}>
+                {isSaving ? "Salvando..." : activeTab === "level5" ? "Finalizar e Ver Resultados" : "Próximo"}
+              </Button>
+            )}
+          </CardFooter>
         </Card>
       </div>
-    )
-  }
-
-  return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between mb-4">
-        <Button variant="outline" onClick={handleViewHistory} className="flex items-center gap-2">
-          <History className="h-4 w-4" />
-          Ver histórico de avaliações
-        </Button>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">Logado como: {user?.email}</span>
-          <Button variant="outline" size="sm" onClick={signOut}>
-            Sair
-          </Button>
-        </div>
-      </div>
-
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Autoavaliação de Maturidade em Gerenciamento de Projetos - MMGP</CardTitle>
-          <CardDescription>
-            Este formulário tem como objetivo avaliar o nível de maturidade em gerenciamento de projetos da sua
-            organização, com base no modelo Prado-MMGP.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!isSupabaseConfigured && <DatabaseError />}
-
-          <div className="mb-6">
-            <Progress value={progress} className="h-2" />
-            <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-              <span>Início</span>
-              <span>Progresso: {Math.round(progress)}%</span>
-              <span>Conclusão</span>
-            </div>
-          </div>
-
-          {currentLevelUnansweredCount > 0 && ["level2", "level3", "level4", "level5"].includes(activeTab) && (
-            <Alert variant="warning" className="mb-4 bg-yellow-50 border-yellow-200">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertTitle className="text-yellow-800">Perguntas não respondidas</AlertTitle>
-              <AlertDescription className="text-yellow-700">
-                Existem {currentLevelUnansweredCount} pergunta(s) não respondida(s) neste nível. As perguntas não
-                respondidas estão destacadas abaixo.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="grid grid-cols-7 mb-8">
-              <TabsTrigger value="email">E-mail</TabsTrigger>
-              <TabsTrigger value="classification">Classificação</TabsTrigger>
-              <TabsTrigger value="level2">Nível 2</TabsTrigger>
-              <TabsTrigger value="level3">Nível 3</TabsTrigger>
-              <TabsTrigger value="level4">Nível 4</TabsTrigger>
-              <TabsTrigger value="level5">Nível 5</TabsTrigger>
-              <TabsTrigger value="results">Resultados</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="email">
-              <RespondentEmail email={formState.respondent.email} onChange={handleEmailChange} />
-            </TabsContent>
-
-            <TabsContent value="classification">
-              <RespondentClassification data={formState.classification} onChange={handleClassificationChange} />
-            </TabsContent>
-
-            <TabsContent value="level2">
-              <Level2Form
-                data={formState.level2}
-                onChange={(questionId, value) => handleQuestionChange("level2", questionId, value)}
-                unansweredQuestions={unansweredQuestions.level2}
-              />
-            </TabsContent>
-
-            <TabsContent value="level3">
-              <Level3Form
-                data={formState.level3}
-                onChange={(questionId, value) => handleQuestionChange("level3", questionId, value)}
-                unansweredQuestions={unansweredQuestions.level3}
-              />
-            </TabsContent>
-
-            <TabsContent value="level4">
-              <Level4Form
-                data={formState.level4}
-                onChange={(questionId, value) => handleQuestionChange("level4", questionId, value)}
-                unansweredQuestions={unansweredQuestions.level4}
-              />
-            </TabsContent>
-
-            <TabsContent value="level5">
-              <Level5Form
-                data={formState.level5}
-                onChange={(questionId, value) => handleQuestionChange("level5", questionId, value)}
-                unansweredQuestions={unansweredQuestions.level5}
-              />
-            </TabsContent>
-
-            <TabsContent value="results">
-              <ResultsView formData={formState} unansweredQuestions={unansweredQuestions} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={handlePrevious} disabled={activeTab === "email"}>
-            Anterior
-          </Button>
-
-          {activeTab === "results" ? (
-            <Button variant="outline" onClick={handleViewHistory} className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Ver histórico
-            </Button>
-          ) : (
-            <Button onClick={handleNext} disabled={!canProceed() || isSaving}>
-              {isSaving ? "Salvando..." : activeTab === "level5" ? "Finalizar e Ver Resultados" : "Próximo"}
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
-    </div>
+    </ProtectedRoute>
   )
 }

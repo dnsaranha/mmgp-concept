@@ -3,45 +3,36 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export async function middleware(req: NextRequest) {
-  // Ignorar rotas públicas e recursos estáticos
-  if (
-    req.nextUrl.pathname.startsWith("/auth") ||
-    req.nextUrl.pathname.startsWith("/_next") ||
-    req.nextUrl.pathname.startsWith("/env-check") ||
-    req.nextUrl.pathname === "/favicon.ico" ||
-    req.nextUrl.pathname === "/home"
-  ) {
-    return NextResponse.next()
-  }
-
   const res = NextResponse.next()
 
   try {
-    // Criar cliente Supabase para o middleware
     const supabase = createMiddlewareClient({ req, res })
 
-    // Verificar se o usuário está autenticado
-    const { data, error } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    if (error) {
-      console.error("Middleware session error:", error)
-      const redirectUrl = new URL("/auth/login?error=session_error", req.url)
+    // Se o usuário não estiver autenticado e estiver tentando acessar uma rota protegida
+    if (!session && !req.nextUrl.pathname.startsWith("/auth")) {
+      const redirectUrl = req.nextUrl.clone()
+      redirectUrl.pathname = "/auth/login"
       return NextResponse.redirect(redirectUrl)
     }
 
-    // Se não estiver autenticado, redirecionar para login
-    if (!data.session) {
-      console.log("No session found, redirecting to login")
-      const redirectUrl = new URL("/auth/login", req.url)
+    // Se o usuário estiver autenticado e estiver tentando acessar uma rota de autenticação
+    if (
+      session &&
+      req.nextUrl.pathname.startsWith("/auth") &&
+      !req.nextUrl.pathname.startsWith("/auth/reset-password") &&
+      !req.nextUrl.pathname.startsWith("/auth/callback")
+    ) {
+      const redirectUrl = req.nextUrl.clone()
+      redirectUrl.pathname = "/"
       return NextResponse.redirect(redirectUrl)
     }
   } catch (error) {
     console.error("Middleware error:", error)
-    // Em caso de erro, permitir o acesso à página de verificação de ambiente
-    if (!req.nextUrl.pathname.startsWith("/env-check")) {
-      const redirectUrl = new URL("/env-check", req.url)
-      return NextResponse.redirect(redirectUrl)
-    }
+    // Em caso de erro, permitir que a solicitação continue
   }
 
   return res

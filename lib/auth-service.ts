@@ -8,10 +8,8 @@ export const authService = {
   // Login com email e senha
   async signIn(email: string, password: string): Promise<{ user: any | null; error: AuthError | null }> {
     try {
-      console.log("Tentando fazer login com email:", email)
       const supabase = getSupabaseClient()
       if (!supabase) {
-        console.error("Erro: Cliente Supabase não inicializado")
         return { user: null, error: { message: "Erro de conexão com o banco de dados" } }
       }
 
@@ -21,21 +19,12 @@ export const authService = {
       })
 
       if (error) {
-        console.error("Erro de autenticação Supabase:", error.message)
-        // Mensagens de erro mais amigáveis baseadas no erro original
-        if (error.message.includes("Invalid login credentials")) {
-          return { user: null, error: { message: "Email ou senha incorretos" } }
-        }
-        if (error.message.includes("Email not confirmed")) {
-          return { user: null, error: { message: "Email não confirmado. Verifique sua caixa de entrada." } }
-        }
         return { user: null, error: { message: error.message } }
       }
 
-      console.log("Login bem-sucedido para:", email)
       return { user: data.user, error: null }
     } catch (err) {
-      console.error("Exceção ao fazer login:", err)
+      console.error("Erro ao fazer login:", err)
       return { user: null, error: { message: "Ocorreu um erro ao fazer login. Tente novamente." } }
     }
   },
@@ -43,16 +32,9 @@ export const authService = {
   // Cadastro de novo usuário
   async signUp(email: string, password: string): Promise<{ user: any | null; error: AuthError | null }> {
     try {
-      console.log("Tentando cadastrar novo usuário com email:", email)
       const supabase = getSupabaseClient()
       if (!supabase) {
-        console.error("Erro: Cliente Supabase não inicializado")
         return { user: null, error: { message: "Erro de conexão com o banco de dados" } }
-      }
-
-      // Verificar se a senha atende aos requisitos mínimos
-      if (password.length < 6) {
-        return { user: null, error: { message: "A senha deve ter pelo menos 6 caracteres" } }
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -64,19 +46,86 @@ export const authService = {
       })
 
       if (error) {
-        console.error("Erro de cadastro Supabase:", error.message)
-        // Mensagens de erro mais amigáveis
-        if (error.message.includes("already registered")) {
-          return { user: null, error: { message: "Este email já está cadastrado" } }
-        }
         return { user: null, error: { message: error.message } }
       }
 
-      console.log("Cadastro bem-sucedido para:", email)
       return { user: data.user, error: null }
     } catch (err) {
-      console.error("Exceção ao cadastrar:", err)
+      console.error("Erro ao cadastrar:", err)
       return { user: null, error: { message: "Ocorreu um erro ao cadastrar. Tente novamente." } }
+    }
+  },
+
+  // Recuperação de senha
+  async resetPassword(email: string): Promise<{ success: boolean; error: AuthError | null }> {
+    try {
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        return { success: false, error: { message: "Erro de conexão com o banco de dados" } }
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      })
+
+      if (error) {
+        return { success: false, error: { message: error.message } }
+      }
+
+      return { success: true, error: null }
+    } catch (err) {
+      console.error("Erro ao solicitar recuperação de senha:", err)
+      return {
+        success: false,
+        error: { message: "Ocorreu um erro ao solicitar a recuperação de senha. Tente novamente." },
+      }
+    }
+  },
+
+  // Definir nova senha
+  async updatePassword(newPassword: string): Promise<{ success: boolean; error: AuthError | null }> {
+    try {
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        return { success: false, error: { message: "Erro de conexão com o banco de dados" } }
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+
+      if (error) {
+        return { success: false, error: { message: error.message } }
+      }
+
+      return { success: true, error: null }
+    } catch (err) {
+      console.error("Erro ao atualizar senha:", err)
+      return {
+        success: false,
+        error: { message: "Ocorreu um erro ao atualizar a senha. Tente novamente." },
+      }
+    }
+  },
+
+  // Logout
+  async signOut(): Promise<{ error: AuthError | null }> {
+    try {
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        return { error: { message: "Erro de conexão com o banco de dados" } }
+      }
+
+      const { error } = await supabase.auth.signOut()
+
+      if (error) {
+        return { error: { message: error.message } }
+      }
+
+      return { error: null }
+    } catch (err) {
+      console.error("Erro ao fazer logout:", err)
+      return { error: { message: "Ocorreu um erro ao fazer logout. Tente novamente." } }
     }
   },
 
@@ -85,20 +134,18 @@ export const authService = {
     try {
       const supabase = getSupabaseClient()
       if (!supabase) {
-        console.error("Erro: Cliente Supabase não inicializado")
         return { session: null, error: { message: "Erro de conexão com o banco de dados" } }
       }
 
       const { data, error } = await supabase.auth.getSession()
 
       if (error) {
-        console.error("Erro ao verificar sessão:", error.message)
         return { session: null, error: { message: error.message } }
       }
 
       return { session: data.session, error: null }
     } catch (err) {
-      console.error("Exceção ao verificar sessão:", err)
+      console.error("Erro ao verificar sessão:", err)
       return { session: null, error: { message: "Ocorreu um erro ao verificar a sessão." } }
     }
   },
